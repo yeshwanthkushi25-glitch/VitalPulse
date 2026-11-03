@@ -93,7 +93,9 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - Investigated the reported login error. The Supabase Auth settings endpoint and GitHub Pages CORS preflight both returned HTTP 200; email confirmation is enabled in the project.
 - Updated `vitalpulse_app/lib/main.dart` to show clearer invalid-credential and unconfirmed-email messages and to provide a resend-confirmation-email action. No credentials or provider secrets were logged.
 - Re-ran `dart format lib/main.dart`, `flutter analyze --no-pub` (**No issues found**), and `MSYS_NO_PATHCONV=1 flutter build web --release --base-href /VitalPulse/` (successful).
-- The login fix is ready to commit and push; the exact user-visible error text was not supplied.
+- Committed and pushed the login fix as `361375b` (`fix: improve login error recovery`). The local refreshed preview returned HTTP 200 at `http://localhost:9322/VitalPulse/`.
+- GitHub Actions run `41711634571` completed with `build-web` and `deploy` successful. As before, the independent Android preview build failed and produced no APK artifact.
+- The exact user-visible error text was not supplied; the login flow now gives actionable messages for the two common Auth failures and supports resending signup confirmation email.
 
 ## Verification so far
 
