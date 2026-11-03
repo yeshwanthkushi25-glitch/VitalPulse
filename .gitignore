@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+supabase/.temp/
+*.jks
+*.keystore
+key.properties
+**/GoogleService-Info.plist
+**/google-services.json
+**/firebase_options.dart
+coverage/
+*.log
+flutter_*.png
+captures/
