@@ -72,7 +72,7 @@ The user wants the different VitalPulse websites and apps to have the same featu
   - uploads the Pages artifact and deploys it from `main`;
   - builds an Android preview APK in a separate job and uploads it as a workflow artifact, so Android build failure does not block website deployment.
 - Official workflow design follows GitHub Pages' Actions deployment model (`upload-pages-artifact` and `deploy-pages`).
-- The updated workflow is pushed and running for commit `5ed05c0`; its result and the Android preview artifact still need to be observed.
+- The final workflow run for commit `e972c78` completed with `build-web` and `deploy` successful. The separate `android-preview` job failed during `flutter build apk --debug`, so no Android APK artifact was uploaded. The Pages artifact was uploaded successfully.
 
 ### Documentation
 
@@ -88,7 +88,8 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - Ran `git diff --check`; it passed. The local `.vscode/settings.json` remains untracked and is excluded from the commit.
 - Committed the code and progress updates as `5ed05c0` (`fix: clarify health sync availability`) and pushed them to `origin main`.
 - The direct Chrome launch was unavailable because this laptop has no supported Chrome device. A local static preview of the completed web artifact was served and opened at `http://localhost:9322/VitalPulse/`; it returned HTTP 200.
-- The public Pages URL returned HTTP 200. The Actions run for commit `5ed05c0` is still in progress at `https://github.com/yeshwanthkushi25-glitch/VitalPulse/actions/runs/41706840486`.
+- The public Pages URL returned HTTP 200. The successful web deployment run is recorded at `https://github.com/yeshwanthkushi25-glitch/VitalPulse/actions/runs/41707697567`.
+- The three deployed demo paths and all three original `vitalpulse_ai_*.html` compatibility URLs also returned HTTP 200.
 
 ## Verification so far
 
@@ -101,13 +102,13 @@ The user wants the different VitalPulse websites and apps to have the same featu
 
 ## Immediate remaining work
 
-1. Watch the GitHub Actions run for commit `5ed05c0`. Fix build/deployment failures. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
+1. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
    - `/VitalPulse/demos/food-drink-scanner/`
    - `/VitalPulse/demos/personalized-diet/`
    - `/VitalPulse/demos/supabase-dashboard/`
    - the three original `vitalpulse_ai_*.html` filenames at the site root.
 2. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
-3. Report the GitHub repository and live Pages URL. State clearly whether the Android preview artifact succeeded. Mention the one Free-plan Supabase password-protection warning.
+3. Report the GitHub repository and live Pages URL. State clearly that the Android preview artifact failed in GitHub Actions. Mention the one Free-plan Supabase password-protection warning.
 
 ## Safety reminders
 
