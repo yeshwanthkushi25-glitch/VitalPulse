@@ -117,7 +117,11 @@ class _AuthScreenState extends State<AuthScreen> {
   final email = TextEditingController(),
       password = TextEditingController(),
       name = TextEditingController();
-  bool registering = false, busy = false, obscure = true;
+  bool registering = false,
+      busy = false,
+      resending = false,
+      canResendConfirmation = false,
+      obscure = true;
   String? error;
   @override
   void dispose() {
@@ -140,6 +144,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       busy = true;
       error = null;
+      canResendConfirmation = false;
     });
     try {
       if (registering) {
@@ -149,10 +154,10 @@ class _AuthScreenState extends State<AuthScreen> {
           data: {'name': name.text.trim()},
         );
         if (response.session == null && mounted) {
-          setState(
-            () => error =
-                'Check your email to confirm your account, then sign in.',
-          );
+          setState(() {
+            error = 'Check your email to confirm your account, then sign in.';
+            canResendConfirmation = true;
+          });
         }
       } else {
         await supabase.auth.signInWithPassword(
@@ -161,7 +166,18 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } on AuthException catch (e) {
-      if (mounted) setState(() => error = e.message);
+      if (mounted) {
+        final detail = e.message.toLowerCase();
+        final confirmationRequired = detail.contains('email not confirmed');
+        setState(() {
+          canResendConfirmation = confirmationRequired;
+          error = confirmationRequired
+              ? 'Confirm your email address before signing in.'
+              : detail.contains('invalid login credentials')
+              ? 'The email or password is incorrect. Check both and try again.'
+              : e.message;
+        });
+      }
     } catch (_) {
       if (mounted) {
         setState(
@@ -171,6 +187,37 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> resendConfirmation() async {
+    final address = email.text.trim();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(address)) {
+      setState(() => error = 'Enter your email address first.');
+      return;
+    }
+    setState(() {
+      resending = true;
+      error = null;
+    });
+    try {
+      await supabase.auth.resend(email: address, type: OtpType.signup);
+      if (mounted) {
+        setState(() {
+          canResendConfirmation = false;
+          error = 'A new confirmation email has been sent. Check your inbox.';
+        });
+      }
+    } on AuthException catch (e) {
+      if (mounted) setState(() => error = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => error = 'Could not resend the email. Try again shortly.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => resending = false);
     }
   }
 
@@ -257,6 +304,18 @@ class _AuthScreenState extends State<AuthScreen> {
                           error!,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    if (canResendConfirmation)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: resending ? null : resendConfirmation,
+                          child: Text(
+                            resending
+                                ? 'Sending confirmation email…'
+                                : 'Resend confirmation email',
                           ),
                         ),
                       ),

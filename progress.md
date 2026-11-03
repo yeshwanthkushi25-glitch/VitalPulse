@@ -90,6 +90,10 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - The direct Chrome launch was unavailable because this laptop has no supported Chrome device. A local static preview of the completed web artifact was served and opened at `http://localhost:9322/VitalPulse/`; it returned HTTP 200.
 - The public Pages URL returned HTTP 200. The successful web deployment run is recorded at `https://github.com/yeshwanthkushi25-glitch/VitalPulse/actions/runs/41707697567`.
 - The three deployed demo paths and all three original `vitalpulse_ai_*.html` compatibility URLs also returned HTTP 200.
+- Investigated the reported login error. The Supabase Auth settings endpoint and GitHub Pages CORS preflight both returned HTTP 200; email confirmation is enabled in the project.
+- Updated `vitalpulse_app/lib/main.dart` to show clearer invalid-credential and unconfirmed-email messages and to provide a resend-confirmation-email action. No credentials or provider secrets were logged.
+- Re-ran `dart format lib/main.dart`, `flutter analyze --no-pub` (**No issues found**), and `MSYS_NO_PATHCONV=1 flutter build web --release --base-href /VitalPulse/` (successful).
+- The login fix is ready to commit and push; the exact user-visible error text was not supplied.
 
 ## Verification so far
 
