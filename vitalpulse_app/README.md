@@ -26,11 +26,15 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 
 - Email/password registration and sign-in using Supabase Auth.
 - Per-user profile and editable calorie, hydration, and sleep targets protected by row-level security.
-- Food and beverage logging, quick-add meals, detailed macros, and hydration controls.
+- Food and beverage logging, quick-add meals, detailed macros, recent meal history with edit/delete/one-tap re-log actions, and hydration controls.
+- Automatic calorie, protein, carbohydrate, and fat targets calculated from height, weight, age, gender, and wellness goal, with daily progress bars.
+- Daily wellness score from 0–100 with a consistency streak counter, plus a persistent light/dark theme toggle.
 - Photo food or beverage scanning through an authenticated Supabase Edge Function; the user reviews each estimate before saving. Images are sent to the configured AI provider and aren't saved by VitalPulse.
 - Optional, read-only Apple Health / Health Connect sync for steps, heart rate, and sleep. Device permissions are requested only when the user starts a sync.
 - Sleep-cycle planner, seven-day health history, deep nutrition summary, JSON backup, responsive Material 3 dashboard, and sign-out.
 - Password fields are never prefilled. Auth sessions are managed by the Supabase SDK.
+
+Android builds use API 36 with a minimum API 26 because the health plugin requires it. The Android preview workflow pins Java 17 and builds with the locked dependency graph.
 
 ## Security and production notes
 

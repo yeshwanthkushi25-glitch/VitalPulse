@@ -96,25 +96,34 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - Committed and pushed the login fix as `361375b` (`fix: improve login error recovery`). The local refreshed preview returned HTTP 200 at `http://localhost:9322/VitalPulse/`.
 - GitHub Actions run `41711634571` completed with `build-web` and `deploy` successful. As before, the independent Android preview build failed and produced no APK artifact.
 - The exact user-visible error text was not supplied; the login flow now gives actionable messages for the two common Auth failures and supports resending signup confirmation email.
+- Added automatic daily calorie and protein/carbohydrate/fat targets based on height, weight, age, gender, and goal, with progress bars in `vitalpulse_app/lib/widgets/progress_widgets.dart`.
+- Added a 0–100 daily wellness score, a consecutive-day streak calculator, recent 30-day meal history, edit/delete actions, and one-tap meal re-logging.
+- Added a persistent light/dark mode toggle using `shared_preferences`.
+- Reproduced the Android failure locally: `permission_handler_android 14.1.1` required API 37 while the project used API 36, then the `health` plugin exposed a minimum API 26 requirement. Pinned `permission_handler` to 12.0.1, set compile SDK 36 and min SDK 26, and pinned CI to Java 17.
+- `flutter build apk --debug --no-pub` now completes successfully and produces `build/app/outputs/flutter-apk/app-debug.apk`.
+- Added calculator and widget tests in `vitalpulse_app/test/`.
+- Final local checks pass: `flutter test` (**8 tests passed**), `flutter analyze --no-pub` (**No issues found**), and the release web build succeeded.
+- The feature changes, Android fix, tests, documentation, and this progress update are ready to commit and push; unrelated untracked Power BI files, `.opencode`, and `.vscode/settings.json` remain excluded.
 
 ## Verification so far
 
 - `flutter analyze --no-pub` completed successfully with **No issues found** after the latest Flutter UI edits.
 - `flutter build web --release --base-href /VitalPulse/` completed successfully after the latest edits. The output includes `index.html`, `main.dart.js`, assets, and service worker.
 - The generated web bundle was checked for the intended Supabase URL and publishable client key; neither provider API keys nor service-role credentials were found in the bundle.
-- A local Windows Android debug build was attempted and failed with Gradle error `java.io.IOException: Unable to establish loopback connection`. The GitHub workflow uses Ubuntu and has a separate Android job; check its result there. Do not claim the APK succeeded unless the Actions artifact is present.
+- The Android debug APK now builds locally with the exact CI command `flutter build apk --debug --no-pub`; the prior API 37/min API 26 blockers are fixed in the dependency and Gradle configuration.
 - `gh` CLI is not installed. Use `git push` with the configured remote credentials and the GitHub connector or public GitHub API to inspect Actions runs.
 - The local built preview is open at `http://localhost:9322/VitalPulse/`; direct Flutter Chrome launch is unavailable on this laptop.
 
 ## Immediate remaining work
 
-1. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
+1. Commit and push the feature update, then confirm the Pages URL returns the Flutter app and the Android preview artifact is uploaded by Actions.
+2. Confirm each of these compatibility URLs loads the same app:
    - `/VitalPulse/demos/food-drink-scanner/`
    - `/VitalPulse/demos/personalized-diet/`
    - `/VitalPulse/demos/supabase-dashboard/`
    - the three original `vitalpulse_ai_*.html` filenames at the site root.
-2. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
-3. Report the GitHub repository and live Pages URL. State clearly that the Android preview artifact failed in GitHub Actions. Mention the one Free-plan Supabase password-protection warning.
+3. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
+4. Report the GitHub repository and live Pages URL, and mention the one Free-plan Supabase password-protection warning.
 
 ## Safety reminders
 

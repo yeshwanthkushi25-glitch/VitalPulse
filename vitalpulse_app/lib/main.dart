@@ -8,6 +8,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'health_calculators.dart';
+import 'theme_settings.dart';
+import 'widgets/progress_widgets.dart';
+
 // Publishable client settings are designed to be present in browser builds.
 // Authorization remains enforced by Supabase Auth and row-level security.
 const supabaseUrl = String.fromEnvironment(
@@ -32,27 +36,40 @@ Future<void> main() async {
       publishableKey: supabaseClientKey,
     );
   }
+  await loadThemePreference();
   runApp(const VitalPulseApp());
 }
 
 class VitalPulseApp extends StatelessWidget {
   const VitalPulseApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'VitalPulse',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xff0ba787),
-        brightness: Brightness.light,
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+    valueListenable: appThemeMode,
+    builder: (context, mode, _) => MaterialApp(
+      title: 'VitalPulse',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff0ba787),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xfff5f8f7),
+        fontFamily: 'Roboto',
       ),
-      useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xfff5f8f7),
-      fontFamily: 'Roboto',
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff0ba787),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+      ),
+      themeMode: mode,
+      home: supabaseUrl.isEmpty || supabaseClientKey.isEmpty
+          ? const SetupScreen()
+          : const AuthGate(),
     ),
-    home: supabaseUrl.isEmpty || supabaseClientKey.isEmpty
-        ? const SetupScreen()
-        : const AuthGate(),
   );
 }
 
@@ -224,6 +241,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(actions: const [ThemeModeButton()]),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -377,6 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       sleep = TextEditingController(text: '0'),
       heartRate = TextEditingController(text: '');
   List<Map<String, dynamic>> meals = [];
+  List<Map<String, dynamic>> recentMeals = [];
   List<Map<String, dynamic>> healthHistory = [];
   List<Map<String, dynamic>> nutritionHistory = [];
   String fitnessGoal = 'maintain';
@@ -401,15 +420,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double get recommendedWaterMl =>
       double.tryParse(waterGoal.text) ??
       ((double.tryParse(weight.text) ?? 70) * 35).clamp(1500, 5000).toDouble();
-  int get recommendedCalories {
-    final base = ((double.tryParse(weight.text) ?? 65) * 30).round();
-    final estimate = fitnessGoal == 'lose'
-        ? base - 300
-        : fitnessGoal == 'gain'
-        ? base + 300
-        : base;
-    return int.tryParse(calorieGoal.text) ?? estimate;
+  int? get profileAge => ageFromBirthYear(int.tryParse(birthYear.text));
+  NutritionTargets get automaticNutritionTargets => calculateNutritionTargets(
+    heightCm: double.tryParse(height.text),
+    weightKg: double.tryParse(weight.text),
+    age: profileAge,
+    gender: gender,
+    goal: fitnessGoal,
+  );
+  NutritionTargets get nutritionTargets {
+    final customCalories = int.tryParse(calorieGoal.text);
+    return customCalories == null || customCalories <= 0
+        ? automaticNutritionTargets
+        : automaticNutritionTargets.forCalories(customCalories);
   }
+
+  int get recommendedCalories => nutritionTargets.calories;
+
+  int get currentWellnessScore => calculateWellnessScore(
+    calories: totalCalories,
+    calorieTarget: nutritionTargets.calories,
+    proteinGrams: totalProtein,
+    proteinTarget: nutritionTargets.proteinGrams,
+    waterMl: int.tryParse(water.text) ?? 0,
+    waterTarget: recommendedWaterMl,
+    sleepHours: double.tryParse(sleep.text) ?? 0,
+    steps: int.tryParse(steps.text) ?? 0,
+  );
+
+  String? _entryDateKey(dynamic value) {
+    final parsed = DateTime.tryParse('$value');
+    return parsed == null ? null : dateKey(parsed.toLocal());
+  }
+
+  Map<String, int> get wellnessScores {
+    final scores = <String, int>{};
+    final today = DateTime.now();
+    for (var offset = 0; offset <= 30; offset++) {
+      final day = today.subtract(Duration(days: offset));
+      final key = dateKey(day);
+      final dayMeals = nutritionHistory.where(
+        (entry) => _entryDateKey(entry['logged_at']) == key,
+      );
+      final dayHealth = healthHistory.cast<Map<String, dynamic>?>().firstWhere(
+        (entry) => entry != null && '${entry['log_date']}' == key,
+        orElse: () => null,
+      );
+      final calories = dayMeals.fold<double>(
+        0,
+        (sum, entry) =>
+            sum + ((entry['calories_kcal'] as num?)?.toDouble() ?? 0),
+      );
+      final protein = dayMeals.fold<double>(
+        0,
+        (sum, entry) => sum + ((entry['protein_g'] as num?)?.toDouble() ?? 0),
+      );
+      scores[key] = key == date
+          ? currentWellnessScore
+          : calculateWellnessScore(
+              calories: calories,
+              calorieTarget: nutritionTargets.calories,
+              proteinGrams: protein,
+              proteinTarget: nutritionTargets.proteinGrams,
+              waterMl: dayHealth?['water_ml'] as num? ?? 0,
+              waterTarget: recommendedWaterMl,
+              sleepHours: dayHealth?['sleep_hours'] as num? ?? 0,
+              steps: dayHealth?['steps'] as num? ?? 0,
+            );
+    }
+    return scores;
+  }
+
+  int get wellnessStreak => calculateWellnessStreak(
+    wellnessScores.entries
+        .where((entry) => entry.value >= 60)
+        .map((entry) => DateTime.parse(entry.key)),
+  );
 
   String get recommendedBedtime {
     final wake = DateTime(2000, 1, 1, wakeTime.hour, wakeTime.minute);
@@ -450,9 +536,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .maybeSingle();
       final logs = await supabase
           .from('nutrition_logs')
-          .select('id,title,calories_kcal,protein_g,entry_type,logged_at')
+          .select(
+            'id,title,calories_kcal,protein_g,carbs_g,fats_g,entry_type,meal_type,logged_at,portion_g,volume_ml,nutrients,estimate_source',
+          )
           .gte('logged_at', '${date}T00:00:00')
           .order('logged_at', ascending: false);
+      final recentLogs = await supabase
+          .from('nutrition_logs')
+          .select(
+            'id,title,calories_kcal,protein_g,carbs_g,fats_g,entry_type,meal_type,logged_at,portion_g,volume_ml,nutrients,estimate_source',
+          )
+          .gte(
+            'logged_at',
+            DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+          )
+          .order('logged_at', ascending: false)
+          .limit(100);
       final health = await supabase
           .from('daily_health_logs')
           .select('steps,heart_rate_bpm,water_ml,sleep_hours')
@@ -464,18 +563,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .gte(
             'log_date',
             DateTime.now()
-                .subtract(const Duration(days: 6))
+                .subtract(const Duration(days: 30))
                 .toIso8601String()
                 .substring(0, 10),
           )
           .order('log_date', ascending: false);
       final nutritionTrend = await supabase
           .from('nutrition_logs')
-          .select('logged_at,calories_kcal')
+          .select('logged_at,calories_kcal,protein_g,carbs_g,fats_g')
           .gte(
             'logged_at',
             DateTime.now()
-                .subtract(const Duration(days: 6))
+                .subtract(const Duration(days: 30))
                 .toIso8601String()
                 .substring(0, 10),
           )
@@ -485,6 +584,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? profile!['display_name'] as String
           : user.email?.split('@').first ?? 'friend';
       meals = List<Map<String, dynamic>>.from(logs);
+      recentMeals = List<Map<String, dynamic>>.from(recentLogs);
       healthHistory = List<Map<String, dynamic>>.from(history);
       nutritionHistory = List<Map<String, dynamic>>.from(nutritionTrend);
       height.text = '${profile?['height_cm'] ?? ''}';
@@ -635,6 +735,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Widget nutritionTargetsCard() {
+    final targets = nutritionTargets;
+    final usingAutomaticTarget = calorieGoal.text.trim().isEmpty;
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.track_changes_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Daily nutrition targets',
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    usingAutomaticTarget ? 'Automatic' : 'Custom kcal',
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              'Calculated from your height, weight, age, gender, and goal. Update your profile to refine it.',
+            ),
+            const SizedBox(height: 10),
+            MacroProgressBar(
+              label: 'Calories',
+              current: totalCalories.toDouble(),
+              target: targets.calories.toDouble(),
+              unit: 'kcal',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            MacroProgressBar(
+              label: 'Protein',
+              current: totalProtein,
+              target: targets.proteinGrams,
+              unit: 'g',
+              color: const Color(0xff7b61ff),
+            ),
+            MacroProgressBar(
+              label: 'Carbohydrates',
+              current: totalCarbs,
+              target: targets.carbsGrams,
+              unit: 'g',
+              color: const Color(0xffe59f20),
+            ),
+            MacroProgressBar(
+              label: 'Fat',
+              current: totalFats,
+              target: targets.fatGrams,
+              unit: 'g',
+              color: const Color(0xffe05d5d),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget wellnessCard() =>
+      WellnessScoreCard(score: currentWellnessScore, streak: wellnessStreak);
+
   Widget profileCard() => Card(
     elevation: 0,
     child: Padding(
@@ -675,6 +844,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     labelText: 'Height (cm)',
                     border: OutlineInputBorder(),
@@ -714,6 +884,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     labelText: 'Weight (kg)',
                     border: OutlineInputBorder(),
@@ -726,8 +897,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: TextField(
                   controller: birthYear,
                   keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
-                    labelText: 'Birth year',
+                    labelText: 'Birth year (for age)',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
@@ -765,6 +937,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: TextField(
                   controller: calorieGoal,
                   keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     labelText: 'Calories / day',
                     hintText: 'Auto estimate',
@@ -778,6 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: TextField(
                   controller: waterGoal,
                   keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     labelText: 'Water goal (ml)',
                     hintText: 'Auto estimate',
@@ -790,8 +964,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Estimated starting goals: about $recommendedCalories kcal and ${recommendedWaterMl.round()} ml water per day.',
+            'Auto estimate for age ${profileAge ?? 30}: ${automaticNutritionTargets.calories} kcal · ${automaticNutritionTargets.proteinGrams.round()} g protein · ${automaticNutritionTargets.carbsGrams.round()} g carbs · ${automaticNutritionTargets.fatGrams.round()} g fat.',
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Daily water target: ${recommendedWaterMl.round()} ml. These are general estimates, not medical advice.',
+          ),
+          if (calorieGoal.text.trim().isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  calorieGoal.clear();
+                  setState(() {});
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Use automatic calorie target'),
+              ),
+            ),
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton.tonalIcon(
@@ -1027,7 +1217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           weeklyCalorieTrend(),
           if (healthHistory.isEmpty)
             const Text('Your saved daily health records will appear here.'),
-          for (final day in healthHistory)
+          for (final day in healthHistory.take(7))
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -1297,135 +1487,146 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> addMeal() async {
-    final title = TextEditingController(),
-        calories = TextEditingController(),
-        protein = TextEditingController(),
-        carbs = TextEditingController(text: '0'),
-        fats = TextEditingController(text: '0'),
-        sugar = TextEditingController(text: '0'),
-        fiber = TextEditingController(text: '0'),
-        portion = TextEditingController(),
-        volume = TextEditingController();
+  Future<void> addMeal({Map<String, dynamic>? existing}) async {
+    final nutrients = existing?['nutrients'] is Map
+        ? Map<String, dynamic>.from(existing!['nutrients'] as Map)
+        : const <String, dynamic>{};
+    final title = TextEditingController(text: '${existing?['title'] ?? ''}'),
+        calories = TextEditingController(
+          text: '${existing?['calories_kcal'] ?? ''}',
+        ),
+        protein = TextEditingController(
+          text: '${existing?['protein_g'] ?? ''}',
+        ),
+        carbs = TextEditingController(text: '${existing?['carbs_g'] ?? 0}'),
+        fats = TextEditingController(text: '${existing?['fats_g'] ?? 0}'),
+        sugar = TextEditingController(text: '${nutrients['sugar_g'] ?? 0}'),
+        fiber = TextEditingController(text: '${nutrients['fiber_g'] ?? 0}'),
+        portion = TextEditingController(
+          text: '${existing?['portion_g'] ?? ''}',
+        ),
+        volume = TextEditingController(text: '${existing?['volume_ml'] ?? ''}');
     final form = GlobalKey<FormState>();
-    var entryType = 'food';
-    var mealType = 'Lunch';
+    var entryType = existing?['entry_type'] == 'beverage' ? 'beverage' : 'food';
+    var mealType = '${existing?['meal_type'] ?? 'Lunch'}';
     final values = await showDialog<List<String>>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Log food or drink'),
-          content: Form(
-            key: form,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: entryType,
-                  decoration: const InputDecoration(labelText: 'Entry type'),
-                  items: const [
-                    DropdownMenuItem(value: 'food', child: Text('Food')),
-                    DropdownMenuItem(value: 'beverage', child: Text('Drink')),
-                  ],
-                  onChanged: (value) =>
-                      setDialogState(() => entryType = value ?? 'food'),
-                ),
-                DropdownButtonFormField<String>(
-                  initialValue: mealType,
-                  decoration: const InputDecoration(labelText: 'Meal time'),
-                  items:
-                      const ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Drink']
-                          .map(
-                            (v) => DropdownMenuItem(value: v, child: Text(v)),
-                          )
-                          .toList(),
-                  onChanged: (value) =>
-                      setDialogState(() => mealType = value ?? 'Lunch'),
-                ),
-                TextFormField(
-                  controller: title,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Enter a name' : null,
-                ),
-                TextFormField(
-                  controller: calories,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Calories (kcal)',
+          title: Text(existing == null ? 'Log food or drink' : 'Edit meal'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: entryType,
+                    decoration: const InputDecoration(labelText: 'Entry type'),
+                    items: const [
+                      DropdownMenuItem(value: 'food', child: Text('Food')),
+                      DropdownMenuItem(value: 'beverage', child: Text('Drink')),
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => entryType = value ?? 'food'),
                   ),
-                  validator: (v) => (int.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: protein,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Protein (g)'),
-                  validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: carbs,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  DropdownButtonFormField<String>(
+                    initialValue: mealType,
+                    decoration: const InputDecoration(labelText: 'Meal time'),
+                    items:
+                        const ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Drink']
+                            .map(
+                              (v) => DropdownMenuItem(value: v, child: Text(v)),
+                            )
+                            .toList(),
+                    onChanged: (value) =>
+                        setDialogState(() => mealType = value ?? 'Lunch'),
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Carbohydrates (g)',
-                  ),
-                  validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: fats,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Fat (g)'),
-                  validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: sugar,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Sugar (g)'),
-                  validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: fiber,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Fiber (g)'),
-                  validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
-                      ? 'Enter zero or more'
-                      : null,
-                ),
-                TextFormField(
-                  controller: portion,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Portion size (g, optional)',
-                  ),
-                ),
-                if (entryType == 'beverage')
                   TextFormField(
-                    controller: volume,
+                    controller: title,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Enter a name' : null,
+                  ),
+                  TextFormField(
+                    controller: calories,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Drink volume (ml, optional)',
+                      labelText: 'Calories (kcal)',
+                    ),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: protein,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Protein (g)'),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: carbs,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Carbohydrates (g)',
+                    ),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: fats,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Fat (g)'),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: sugar,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Sugar (g)'),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: fiber,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Fiber (g)'),
+                    validator: (v) => (double.tryParse(v ?? '') ?? -1) < 0
+                        ? 'Enter zero or more'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: portion,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Portion size (g, optional)',
                     ),
                   ),
-              ],
+                  if (entryType == 'beverage')
+                    TextFormField(
+                      controller: volume,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Drink volume (ml, optional)',
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -1451,7 +1652,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ]);
                 }
               },
-              child: const Text('Save'),
+              child: Text(existing == null ? 'Save' : 'Update'),
             ),
           ],
         ),
@@ -1472,10 +1673,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     if (values == null) return;
     try {
-      await supabase.from('nutrition_logs').insert({
+      final payload = {
         'entry_type': values[5],
         'title': values[0],
-        'calories_kcal': int.parse(values[1]),
+        'calories_kcal': double.parse(values[1]),
         'protein_g': double.parse(values[2]),
         'carbs_g': double.parse(values[3]),
         'fats_g': double.parse(values[4]),
@@ -1488,7 +1689,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'fiber_g': double.parse(values[10]),
         },
         'estimate_source': 'manual',
-      });
+      };
+      if (existing == null) {
+        await supabase.from('nutrition_logs').insert(payload);
+      } else {
+        await supabase
+            .from('nutrition_logs')
+            .update(payload)
+            .eq('id', existing['id']);
+      }
       await load();
     } catch (_) {
       if (mounted) {
@@ -1500,6 +1709,139 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
   }
+
+  Future<void> deleteMeal(Map<String, dynamic> meal) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete meal?'),
+        content: Text('Remove “${meal['title']}” from your history?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await supabase.from('nutrition_logs').delete().eq('id', meal['id']);
+      await load();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete this meal.')),
+        );
+      }
+    }
+  }
+
+  Future<void> relogMeal(Map<String, dynamic> meal) async {
+    try {
+      await supabase.from('nutrition_logs').insert({
+        'entry_type': meal['entry_type'] ?? 'food',
+        'title': meal['title'],
+        'meal_type': meal['meal_type'] ?? 'Snack',
+        'portion_g': meal['portion_g'],
+        'volume_ml': meal['volume_ml'],
+        'calories_kcal': meal['calories_kcal'] ?? 0,
+        'protein_g': meal['protein_g'] ?? 0,
+        'carbs_g': meal['carbs_g'] ?? 0,
+        'fats_g': meal['fats_g'] ?? 0,
+        'nutrients': meal['nutrients'] is Map
+            ? meal['nutrients']
+            : <String, dynamic>{},
+        'estimate_source': 'relogged',
+      });
+      await load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${meal['title']} re-logged')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not re-log this meal.')),
+        );
+      }
+    }
+  }
+
+  String mealDateLabel(dynamic raw) {
+    final parsed = DateTime.tryParse('$raw')?.toLocal();
+    if (parsed == null) return '';
+    if (dateKey(parsed) == date) return 'Today';
+    return '${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}';
+  }
+
+  Widget mealTile(
+    Map<String, dynamic> meal, {
+    bool showDate = false,
+  }) => ListTile(
+    leading: CircleAvatar(
+      backgroundColor: const Color(0xffe0f5ee),
+      child: Icon(
+        meal['entry_type'] == 'beverage'
+            ? Icons.local_drink_outlined
+            : Icons.restaurant,
+        color: const Color(0xff098265),
+      ),
+    ),
+    title: Text('${meal['title']}'),
+    subtitle: Text(
+      '${meal['calories_kcal']} kcal · ${meal['protein_g']} g protein${showDate ? ' · ${mealDateLabel(meal['logged_at'])}' : ''}',
+    ),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Re-log this meal',
+          icon: const Icon(Icons.replay_outlined),
+          onPressed: () => relogMeal(meal),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Meal actions',
+          onSelected: (action) {
+            if (action == 'edit') addMeal(existing: meal);
+            if (action == 'delete') deleteMeal(meal);
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'edit', child: Text('Edit meal')),
+            PopupMenuItem(value: 'delete', child: Text('Delete meal')),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget recentMealHistoryCard() => Card(
+    elevation: 0,
+    child: ExpansionTile(
+      leading: const Icon(Icons.history),
+      title: const Text('Recent meal history'),
+      subtitle: Text('${recentMeals.length} meals from the last 30 days'),
+      children: recentMeals.isEmpty
+          ? [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(18, 0, 18, 18),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Your recent meals will appear here.'),
+                ),
+              ),
+            ]
+          : recentMeals
+                .take(12)
+                .map((meal) => mealTile(meal, showDate: true))
+                .toList(),
+    ),
+  );
 
   Future<void> quickLogFood({
     required String title,
@@ -1673,6 +2015,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         style: TextStyle(fontWeight: FontWeight.w800),
       ),
       actions: [
+        const ThemeModeButton(),
         if (healthSyncSupported)
           IconButton(
             tooltip: syncingHealth
@@ -1767,6 +2110,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
+                nutritionTargetsCard(),
+                wellnessCard(),
                 profileCard(),
                 const SizedBox(height: 20),
                 Text(
@@ -1933,37 +2278,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  ...meals.map(
-                    (m) => Card(
-                      elevation: 0,
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xffe0f5ee),
-                          child: Icon(
-                            m['entry_type'] == 'beverage'
-                                ? Icons.local_drink_outlined
-                                : Icons.restaurant,
-                            color: const Color(0xff098265),
-                          ),
-                        ),
-                        title: Text('${m['title']}'),
-                        subtitle: Text(
-                          '${m['calories_kcal']} kcal  •  ${m['protein_g']} g protein',
-                        ),
-                        trailing: IconButton(
-                          tooltip: 'Delete entry',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () async {
-                            await supabase
-                                .from('nutrition_logs')
-                                .delete()
-                                .eq('id', m['id']);
-                            await load();
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+                  ...meals.map((m) => Card(elevation: 0, child: mealTile(m))),
+                recentMealHistoryCard(),
                 Card(
                   elevation: 0,
                   child: ExpansionTile(

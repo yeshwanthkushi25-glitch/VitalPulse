@@ -35,7 +35,7 @@ The migration in `supabase/migrations/` enables and forces RLS on profiles, nutr
 
 ## Current scope
 
-The app supports email/password account creation and sign-in, per-user profiles and targets, quick food and beverage logging, detailed macro entry, hydration tracking, optional Apple Health / Health Connect read sync for steps, heart rate, and sleep, a sleep-cycle planner, seven-day health history, JSON backup, and photo-based food or beverage nutrition estimates with user review. A photo is sent to the configured AI provider only after the user chooses a scan. Photos are not retained by VitalPulse. Estimates are approximate and should be reviewed before saving.
+The app supports email/password account creation and sign-in, per-user profiles and targets, automatic calorie and macro targets with progress bars, editable/re-loggable meal history, hydration tracking, a 0–100 wellness score with streaks, persistent light/dark mode, optional Apple Health / Health Connect read sync for steps, heart rate, and sleep, a sleep-cycle planner, seven-day health history, JSON backup, and photo-based food or beverage nutrition estimates with user review. A photo is sent to the configured AI provider only after the user chooses a scan. Photos are not retained by VitalPulse. Estimates are approximate and should be reviewed before saving.
 
 ## Supabase CLI
 

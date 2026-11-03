@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.example.vitalpulse_app"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler 12.x targets Android API 35 and keeps this app
+    // compatible with Flutter's API 36 / AGP 9.1 toolchain.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,7 +21,8 @@ android {
         applicationId = "com.example.vitalpulse_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // The health plugin requires Android API 26 or newer.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
