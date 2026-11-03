@@ -4,8 +4,8 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 
 ## Configure Supabase
 
-1. Create a Supabase project and keep its service-role key private. The Flutter app uses only the project's public/anon key; row-level security is required for safety.
-2. Apply the schema from the repository root:
+1. VitalPulse is connected to the existing project `jmteswvfobeqcapykswv`. It uses the public publishable client key; row-level security protects each user's records. Never put a service-role key in the app.
+2. For a fresh project only, apply the schema from the repository root:
 
    ```powershell
    npx supabase login
@@ -13,12 +13,11 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
    npx supabase db push
    ```
 
-3. In Supabase Auth settings, set the site's allowed redirect URLs for the platforms you deploy. Enable email confirmation and configure SMTP before inviting real users.
-4. Copy `.env.example` to `.env.local`, put your project URL and publishable key in it, and keep `.env.local` untracked. Then run the app from this directory:
+3. In Supabase Auth settings, set allowed redirect URLs for any custom domains. Email confirmation is enabled by the project; configure SMTP before inviting real users.
+4. The existing project URL and public key are the safe defaults in the app, so run it directly from this directory:
 
    ```powershell
-   Copy-Item .env.example .env.local
-   flutter run -d chrome --dart-define-from-file=.env.local
+   flutter run -d chrome
    ```
 
    For production builds, provide the same two public configuration values through your deployment pipeline. Never pass a service-role or database password to a client build.
@@ -26,11 +25,11 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 ## Features
 
 - Email/password registration and sign-in using Supabase Auth.
-- Per-user profile, nutrition, and daily health records protected by row-level security.
-- Food entry creation and deletion; steps, water, and sleep tracking.
-- Photo meal scanning through an authenticated Supabase Edge Function; the user reviews each estimate before saving. Images are sent to the configured AI provider and aren't saved by VitalPulse.
+- Per-user profile and editable calorie, hydration, and sleep targets protected by row-level security.
+- Food and beverage logging, quick-add meals, detailed macros, and hydration controls.
+- Photo food or beverage scanning through an authenticated Supabase Edge Function; the user reviews each estimate before saving. Images are sent to the configured AI provider and aren't saved by VitalPulse.
 - Optional, read-only Apple Health / Health Connect sync for steps, heart rate, and sleep. Device permissions are requested only when the user starts a sync.
-- Responsive Material 3 dashboard and sign-out.
+- Sleep-cycle planner, seven-day health history, deep nutrition summary, JSON backup, responsive Material 3 dashboard, and sign-out.
 - Password fields are never prefilled. Auth sessions are managed by the Supabase SDK.
 
 ## Security and production notes
@@ -41,4 +40,4 @@ The health sync reads from HealthKit or Health Connect only after an explicit pe
 
 ## Meal scanner provider keys
 
-Configure `OPENROUTER_API_KEY`, `GEMINI_API_KEY_1`, and `GEMINI_API_KEY_2` as Supabase Edge Function secrets for `analyze-food`. The function tries OpenRouter first, then the two Gemini keys as fallbacks. Keep provider keys in Supabase secrets; never put them in Flutter, HTML, `.env.local`, or source control. Provider requests may incur charges under the corresponding provider accounts.
+`OPENROUTER_API_KEY`, `GEMINI_API_KEY_1`, and `GEMINI_API_KEY_2` are configured as Supabase Edge Function secrets for `analyze-food`. The function tries OpenRouter first, then the two Gemini keys as fallbacks. Keep provider keys in Supabase secrets; never put them in Flutter, HTML, `.env.local`, or source control. Provider requests may incur charges under the corresponding provider accounts.

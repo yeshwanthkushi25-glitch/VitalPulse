@@ -1,19 +1,19 @@
 # VitalPulse — AI health & nutrition companion
 
-VitalPulse is a Flutter application for nutrition and daily wellness tracking, backed by Supabase Auth and a row-level-secured Postgres database. The earlier browser prototypes are preserved separately in `demos/`.
+VitalPulse is one Flutter application for nutrition and daily wellness tracking, backed by Supabase Auth and a row-level-secured Postgres database. The same application is built for web, Android, iOS, and Windows.
 
-**The HTML demos are local-only prototypes.** Their sample accounts and browser storage are not secure authentication or server-side storage. The demo pages remove previously entered Supabase key fields and scrub saved key values from their local storage. Use the Flutter app for real accounts and data.
+The original HTML prototypes are retained in `demos/` for project history. The published site maps their old page names and paths to the same authenticated Flutter app so they no longer present separate, inconsistent products. Prototype HTML opened directly from the source checkout is not a secure login or data service.
 
 ## Project layout
 
 - `vitalpulse_app/` — Flutter app for Android, iOS, web, and Windows.
 - `supabase/` — backend configuration and database migrations.
 - `supabase/functions/analyze-food/` — authenticated, rate-limited AI meal scanner. Provider secrets are stored server-side.
-- `demos/` — three previous HTML prototypes, preserved for reference and demonstration.
+- `demos/` — three original HTML prototypes, retained as source history; deployed addresses route to the shared Flutter app.
 - `docs/screenshots/` — screenshots of the app and demos.
 - `docs/privacy-policy.md` — starter privacy policy for review before release.
 
-## Demo screenshots
+## Screenshots
 
 | Flutter sign-in | Food & drink scanner prototype |
 | --- | --- |
@@ -35,7 +35,7 @@ The migration in `supabase/migrations/` enables and forces RLS on profiles, nutr
 
 ## Current scope
 
-The app supports email/password account creation and sign-in, meal and beverage logging, water tracking, optional Apple Health / Health Connect read sync for steps, heart rate, and sleep, photo-based nutrition estimates with user review, and account sign-out. A meal photo is sent to the configured AI provider only after the user chooses a scan. Photos are not retained by VitalPulse. Estimates are approximate and should be reviewed before saving.
+The app supports email/password account creation and sign-in, per-user profiles and targets, quick food and beverage logging, detailed macro entry, hydration tracking, optional Apple Health / Health Connect read sync for steps, heart rate, and sleep, a sleep-cycle planner, seven-day health history, JSON backup, and photo-based food or beverage nutrition estimates with user review. A photo is sent to the configured AI provider only after the user chooses a scan. Photos are not retained by VitalPulse. Estimates are approximate and should be reviewed before saving.
 
 ## Supabase CLI
 
@@ -48,4 +48,8 @@ npx supabase db push
 npx supabase functions deploy analyze-food
 ```
 
-For meal photo scans, copy `supabase/functions/.env.example` to `supabase/functions/.env`, add your OpenAI API key, and set the deployed web origin in `ALLOWED_ORIGINS`. The local Supabase CLI reads that file for local functions; upload the same secrets with `npx supabase secrets set --env-file supabase/functions/.env`. Never commit `.env`; the function verifies the user's Supabase session, applies a 20-scan daily account limit, validates image type and size, and calls the AI provider with a server-side key. On iOS, enable the HealthKit capability in the signing profile. On Android, install Health Connect and review the privacy policy before requesting permissions.
+For meal photo scans, configure `OPENROUTER_API_KEY`, `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and the deployed origin in `ALLOWED_ORIGINS` as Supabase Edge Function secrets. Provider keys remain server-side. The function verifies the user's Supabase session, applies a 20-scan daily account limit, validates image type and size, and returns an approximate estimate. On iOS, enable the HealthKit capability in the signing profile. On Android, install Health Connect and review the privacy policy before requesting permissions.
+
+## Website deployment
+
+The public site is built from the same Flutter source and deployed to GitHub Pages on pushes to `main`. After enabling **Settings → Pages → Source: GitHub Actions**, the live app will be available at [VitalPulse on GitHub Pages](https://yeshwanthkushi25-glitch.github.io/VitalPulse/). The three older demo paths and original HTML filenames are compatibility addresses for that same app. Android preview APKs are published as workflow artifacts.

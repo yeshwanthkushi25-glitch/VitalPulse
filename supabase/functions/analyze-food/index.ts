@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 const maxImageBytes = 5 * 1024 * 1024;
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const localOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-const systemPrompt = "Estimate the visible meal's nutrition. Return JSON only with title (string), calories_kcal (number), protein_g (number), carbs_g (number), and fats_g (number). Use one reasonable serving estimate. If the image is not clearly a food or drink, return a short title asking for a clearer meal photo and zero values. Estimates are approximate; do not give medical advice.";
+const systemPrompt = "Estimate the visible meal or drink's nutrition for one realistic serving. Return JSON only with title, calories_kcal, protein_g, carbs_g, fats_g, portion_g, saturated_fat_g, sugar_g, fiber_g, sodium_mg, cholesterol_mg, potassium_mg, confidence_percent, and ingredients (array of {name, grams, calories_kcal}). Use numeric values. If the image is not clearly food or drink, use a short title asking for a clearer photo and zero values. Estimates are approximate; do not give medical advice.";
 
 Deno.serve(async (request: Request) => {
   const origin = request.headers.get("Origin") ?? "";
@@ -100,7 +100,7 @@ async function requestOpenRouter(apiKey: string, imageBase64: string, mimeType: 
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: Deno.env.get("OPENROUTER_MODEL") ?? "google/gemini-3.8-flash",
-      max_tokens: 300,
+      max_tokens: 700,
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [
@@ -138,6 +138,25 @@ async function requestGemini(apiKey: string, imageBase64: string, mimeType: stri
             protein_g: { type: "NUMBER" },
             carbs_g: { type: "NUMBER" },
             fats_g: { type: "NUMBER" },
+            portion_g: { type: "NUMBER" },
+            saturated_fat_g: { type: "NUMBER" },
+            sugar_g: { type: "NUMBER" },
+            fiber_g: { type: "NUMBER" },
+            sodium_mg: { type: "NUMBER" },
+            cholesterol_mg: { type: "NUMBER" },
+            potassium_mg: { type: "NUMBER" },
+            confidence_percent: { type: "NUMBER" },
+            ingredients: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  name: { type: "STRING" },
+                  grams: { type: "NUMBER" },
+                  calories_kcal: { type: "NUMBER" },
+                },
+              },
+            },
           },
           required: ["title", "calories_kcal", "protein_g", "carbs_g", "fats_g"],
         },
@@ -163,7 +182,43 @@ function validateEstimate(result: unknown) {
   if (!title || !Number.isFinite(calories) || !Number.isFinite(protein) || !Number.isFinite(carbs) || !Number.isFinite(fats) || calories < 0 || calories > 20000 || protein < 0 || protein > 2000 || carbs < 0 || carbs > 3000 || fats < 0 || fats > 1000) {
     throw new Error("Nutrition estimate was outside the supported range.");
   }
-  return { title, calories_kcal: calories, protein_g: protein, carbs_g: carbs, fats_g: fats };
+  const optional = (key: string, maximum: number) => {
+    const amount = Number(value[key] ?? 0);
+    return Number.isFinite(amount) ? Math.max(0, Math.min(maximum, amount)) : 0;
+  };
+  const ingredients = Array.isArray(value.ingredients)
+    ? value.ingredients.slice(0, 12).flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as Record<string, unknown>;
+      const name = typeof row.name === "string" ? row.name.trim().slice(0, 80) : "";
+      if (!name) return [];
+      const grams = Number(row.grams ?? 0);
+      const kcal = Number(row.calories_kcal ?? 0);
+      return [{
+        name,
+        grams: Number.isFinite(grams) ? Math.max(0, Math.min(100000, grams)) : 0,
+        calories_kcal: Number.isFinite(kcal) ? Math.max(0, Math.min(20000, kcal)) : 0,
+      }];
+    })
+    : [];
+  return {
+    title,
+    calories_kcal: calories,
+    protein_g: protein,
+    carbs_g: carbs,
+    fats_g: fats,
+    portion_g: optional("portion_g", 100000),
+    confidence_percent: optional("confidence_percent", 100),
+    ingredients,
+    nutrients: {
+      saturated_fat_g: optional("saturated_fat_g", 1000),
+      sugar_g: optional("sugar_g", 3000),
+      fiber_g: optional("fiber_g", 1000),
+      sodium_mg: optional("sodium_mg", 100000),
+      cholesterol_mg: optional("cholesterol_mg", 100000),
+      potassium_mg: optional("potassium_mg", 100000),
+    },
+  };
 }
 
 class ProviderRequestError extends Error {

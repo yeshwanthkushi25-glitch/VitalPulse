@@ -14,6 +14,8 @@ The local stack is for development and testing. It runs locally and is not a pub
 
 ## Connect to a Supabase cloud project
 
-After signing in with `npx supabase login`, link this project using the project reference, then apply the migration with `npx supabase db push`. The website still needs a static web host or local web server; Supabase CLI deploys database migrations and backend services, not this standalone HTML page.
+After signing in with `npx supabase login`, link this project using the project reference, then apply pending migrations with `npx supabase db push`. The production project has already received the migrations in this repository. The `profiles` table stores user-specific calorie, hydration, and sleep targets; profile rows remain owner-scoped by RLS.
 
-Do not put service-role keys or AI provider keys in the HTML source. Configure browser AI keys locally for testing only. A public deployment needs server-side key handling.
+The deployed `analyze-food` Edge Function requires a valid user session and uses server-side provider secrets. Configure `OPENROUTER_API_KEY`, `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and `ALLOWED_ORIGINS` in the Supabase Dashboard's Edge Function Secrets page. Never add provider keys to the app or GitHub. Image scans may use billable provider requests.
+
+Do not put service-role keys or AI provider keys in HTML source. The Flutter client uses a publishable key with RLS; AI provider keys stay in server-side function secrets.

@@ -1,16 +1,21 @@
-name: Flutter
+name: VitalPulse build and deploy
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: vitalpulse-pages
+  cancel-in-progress: true
+
 jobs:
-  analyze-and-build:
+  build-web:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -22,7 +27,56 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: flutter analyze
-      - name: Build web app
-        run: flutter build web --release --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=public-placeholder
-      - name: Build Android app
-        run: flutter build apk --debug --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=public-placeholder
+      - name: Build the shared web application
+        run: flutter build web --release --base-href /VitalPulse/
+      - name: Route every prototype address to the shared app
+        working-directory: .
+        run: |
+          for route in food-drink-scanner personalized-diet supabase-dashboard; do
+            mkdir -p "vitalpulse_app/build/web/demos/$route"
+            cp vitalpulse_app/build/web/index.html "vitalpulse_app/build/web/demos/$route/index.html"
+          done
+          for page in \
+            vitalpulse_ai_smart_diet_food_drink_scanner_watch_sync_deep_nutrition_summary.html \
+            vitalpulse_ai_personalized_diet_beverage_vision_watch_data_sleep_website.html \
+            vitalpulse_ai_smart_diet_watch_biometrics_sleep_os_supabase_full_stack.html; do
+            cp vitalpulse_app/build/web/index.html "vitalpulse_app/build/web/$page"
+          done
+          touch vitalpulse_app/build/web/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: vitalpulse_app/build/web
+
+  android-preview:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vitalpulse_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Build Android preview APK
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vitalpulse-android-preview
+          path: vitalpulse_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build-web
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the shared app to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
