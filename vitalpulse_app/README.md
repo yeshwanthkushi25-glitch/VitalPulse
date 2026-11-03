@@ -14,10 +14,11 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
    ```
 
 3. In Supabase Auth settings, set the site's allowed redirect URLs for the platforms you deploy. Enable email confirmation and configure SMTP before inviting real users.
-4. Run the app from this directory, supplying values locally (do not commit them):
+4. Copy `.env.example` to `.env.local`, put your project URL and publishable key in it, and keep `.env.local` untracked. Then run the app from this directory:
 
    ```powershell
-   flutter run -d chrome --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
+   Copy-Item .env.example .env.local
+   flutter run -d chrome --dart-define-from-file=.env.local
    ```
 
    For production builds, provide the same two public configuration values through your deployment pipeline. Never pass a service-role or database password to a client build.

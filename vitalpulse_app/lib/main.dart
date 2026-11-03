@@ -8,15 +8,19 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+const supabasePublishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+const legacySupabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+final supabaseClientKey = supabasePublishableKey.isNotEmpty
+    ? supabasePublishableKey
+    : legacySupabaseAnonKey;
 final supabase = Supabase.instance.client;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+  if (supabaseUrl.isNotEmpty && supabaseClientKey.isNotEmpty) {
     await Supabase.initialize(
       url: supabaseUrl,
-      publishableKey: supabaseAnonKey,
+      publishableKey: supabaseClientKey,
     );
   }
   runApp(const VitalPulseApp());
@@ -37,7 +41,7 @@ class VitalPulseApp extends StatelessWidget {
       scaffoldBackgroundColor: const Color(0xfff5f8f7),
       fontFamily: 'Roboto',
     ),
-    home: supabaseUrl.isEmpty || supabaseAnonKey.isEmpty
+    home: supabaseUrl.isEmpty || supabaseClientKey.isEmpty
         ? const SetupScreen()
         : const AuthGate(),
   );
@@ -70,7 +74,7 @@ class SetupScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Run the database migration, then start this app with SUPABASE_URL and SUPABASE_ANON_KEY provided as Dart compile-time values. Never use a service-role key in the app.',
+                  'Run the database migration, then start this app with SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY provided as Dart compile-time values. Never use a service-role key in the app.',
                 ),
                 const SizedBox(height: 18),
                 const SelectableText('See README.md for setup instructions.'),
