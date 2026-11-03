@@ -72,7 +72,7 @@ The user wants the different VitalPulse websites and apps to have the same featu
   - uploads the Pages artifact and deploys it from `main`;
   - builds an Android preview APK in a separate job and uploads it as a workflow artifact, so Android build failure does not block website deployment.
 - Official workflow design follows GitHub Pages' Actions deployment model (`upload-pages-artifact` and `deploy-pages`).
-- **The updated workflow has not yet been pushed or observed completing.** The Pages site is configured, but the live site must still be verified after pushing this change.
+- The updated workflow is pushed and running for commit `5ed05c0`; its result and the Android preview artifact still need to be observed.
 
 ### Documentation
 
@@ -86,7 +86,9 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - Ran `flutter analyze --no-pub`; it completed with **No issues found**.
 - Ran `MSYS_NO_PATHCONV=1 flutter build web --release --base-href /VitalPulse/`; it completed successfully and produced `build/web/index.html` and `build/web/main.dart.js`. Git Bash path conversion caused the first Windows invocation to reject the base href before compilation; the corrected invocation succeeded.
 - Ran `git diff --check`; it passed. The local `.vscode/settings.json` remains untracked and is excluded from the commit.
-- The pending code and progress updates still need to be committed and pushed to `origin main`, followed by GitHub Actions and Pages verification.
+- Committed the code and progress updates as `5ed05c0` (`fix: clarify health sync availability`) and pushed them to `origin main`.
+- The direct Chrome launch was unavailable because this laptop has no supported Chrome device. A local static preview of the completed web artifact was served and opened at `http://localhost:9322/VitalPulse/`; it returned HTTP 200.
+- The public Pages URL returned HTTP 200. The Actions run for commit `5ed05c0` is still in progress at `https://github.com/yeshwanthkushi25-glitch/VitalPulse/actions/runs/41706840486`.
 
 ## Verification so far
 
@@ -95,18 +97,17 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - The generated web bundle was checked for the intended Supabase URL and publishable client key; neither provider API keys nor service-role credentials were found in the bundle.
 - A local Windows Android debug build was attempted and failed with Gradle error `java.io.IOException: Unable to establish loopback connection`. The GitHub workflow uses Ubuntu and has a separate Android job; check its result there. Do not claim the APK succeeded unless the Actions artifact is present.
 - `gh` CLI is not installed. Use `git push` with the configured remote credentials and the GitHub connector or public GitHub API to inspect Actions runs.
-- The app was previously opened in Chrome at `http://localhost:9322`; that was before the latest feature edits. Refresh/relaunch if a local preview is needed.
+- The local built preview is open at `http://localhost:9322/VitalPulse/`; direct Flutter Chrome launch is unavailable on this laptop.
 
 ## Immediate remaining work
 
-1. Stage the intended code and this `progress.md`; commit and push to `origin main` as the user has requested. Never stage `.vscode/settings.json`, `.env.local`, or generated build directories.
-2. Watch the GitHub Actions run. Fix build/deployment failures. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
+1. Watch the GitHub Actions run for commit `5ed05c0`. Fix build/deployment failures. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
    - `/VitalPulse/demos/food-drink-scanner/`
    - `/VitalPulse/demos/personalized-diet/`
    - `/VitalPulse/demos/supabase-dashboard/`
    - the three original `vitalpulse_ai_*.html` filenames at the site root.
-3. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
-4. Report the GitHub repository and live Pages URL. State clearly whether the Android preview artifact succeeded. Mention the one Free-plan Supabase password-protection warning.
+2. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
+3. Report the GitHub repository and live Pages URL. State clearly whether the Android preview artifact succeeded. Mention the one Free-plan Supabase password-protection warning.
 
 ## Safety reminders
 
