@@ -38,3 +38,7 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 The migration creates owner-scoped RLS policies, enables and forces RLS, grants table access only to authenticated users, validates health/nutrition ranges, and creates profiles on signup. Apply migrations to a fresh project before launching. Configure email confirmation, SMTP, redirect allowlists, MFA/rate limits, backups, and monitoring in Supabase. The public anon key is designed for client use only when RLS is correctly configured. Do not add service keys, AI provider secrets, or device-provider credentials to Flutter defines or source control.
 
 The health sync reads from HealthKit or Health Connect only after an explicit permission request. Configure the platform privacy permissions and HealthKit capability, then verify on a real device before store release. Nutrition results are estimates, not clinical guidance.
+
+## Meal scanner provider keys
+
+Configure `OPENROUTER_API_KEY`, `GEMINI_API_KEY_1`, and `GEMINI_API_KEY_2` as Supabase Edge Function secrets for `analyze-food`. The function tries OpenRouter first, then the two Gemini keys as fallbacks. Keep provider keys in Supabase secrets; never put them in Flutter, HTML, `.env.local`, or source control. Provider requests may incur charges under the corresponding provider accounts.
