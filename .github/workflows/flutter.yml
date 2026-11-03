@@ -24,3 +24,5 @@ jobs:
       - run: flutter analyze
       - name: Build web app
         run: flutter build web --release --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=public-placeholder
+      - name: Build Android app
+        run: flutter build apk --debug --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=public-placeholder

@@ -27,6 +27,8 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 - Email/password registration and sign-in using Supabase Auth.
 - Per-user profile, nutrition, and daily health records protected by row-level security.
 - Food entry creation and deletion; steps, water, and sleep tracking.
+- Photo meal scanning through an authenticated Supabase Edge Function; the user reviews each estimate before saving. Images are sent to the configured AI provider and aren't saved by VitalPulse.
+- Optional, read-only Apple Health / Health Connect sync for steps, heart rate, and sleep. Device permissions are requested only when the user starts a sync.
 - Responsive Material 3 dashboard and sign-out.
 - Password fields are never prefilled. Auth sessions are managed by the Supabase SDK.
 
@@ -34,4 +36,4 @@ Flutter health and nutrition tracker with Supabase Auth and a user-isolated Post
 
 The migration creates owner-scoped RLS policies, enables and forces RLS, grants table access only to authenticated users, validates health/nutrition ranges, and creates profiles on signup. Apply migrations to a fresh project before launching. Configure email confirmation, SMTP, redirect allowlists, MFA/rate limits, backups, and monitoring in Supabase. The public anon key is designed for client use only when RLS is correctly configured. Do not add service keys, AI provider secrets, or device-provider credentials to Flutter defines or source control.
 
-This is a production-oriented foundation, not a clinical device integration. Watch data is entered manually; camera/AI food recognition and native HealthKit/Health Connect sync require provider-specific implementation and review.
+The health sync reads from HealthKit or Health Connect only after an explicit permission request. Configure the platform privacy permissions and HealthKit capability, then verify on a real device before store release. Nutrition results are estimates, not clinical guidance.

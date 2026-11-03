@@ -8,8 +8,10 @@ VitalPulse is a Flutter application for nutrition and daily wellness tracking, b
 
 - `vitalpulse_app/` — Flutter app for Android, iOS, web, and Windows.
 - `supabase/` — backend configuration and database migrations.
+- `supabase/functions/analyze-food/` — authenticated, rate-limited AI meal scanner. Provider secrets are stored server-side.
 - `demos/` — three previous HTML prototypes, preserved for reference and demonstration.
 - `docs/screenshots/` — screenshots of the app and demos.
+- `docs/privacy-policy.md` — starter privacy policy for review before release.
 
 ## Demo screenshots
 
@@ -33,7 +35,7 @@ The migration in `supabase/migrations/` enables and forces RLS on profiles, nutr
 
 ## Current scope
 
-The app supports email/password account creation and sign-in, daily nutrition logging, water, steps, and sleep tracking, and account sign-out. Camera food recognition and automatic HealthKit/Health Connect watch synchronization are future integrations; the existing demos show prototype concepts for those features.
+The app supports email/password account creation and sign-in, meal and beverage logging, water tracking, optional Apple Health / Health Connect read sync for steps, heart rate, and sleep, photo-based nutrition estimates with user review, and account sign-out. A meal photo is sent to the configured AI provider only after the user chooses a scan. Photos are not retained by VitalPulse. Estimates are approximate and should be reviewed before saving.
 
 ## Supabase CLI
 
@@ -43,4 +45,7 @@ From the project root:
 npx supabase login
 npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
+npx supabase functions deploy analyze-food
 ```
+
+For meal photo scans, copy `supabase/functions/.env.example` to `supabase/functions/.env`, add your OpenAI API key, and set the deployed web origin in `ALLOWED_ORIGINS`. The local Supabase CLI reads that file for local functions; upload the same secrets with `npx supabase secrets set --env-file supabase/functions/.env`. Never commit `.env`; the function verifies the user's Supabase session, applies a 20-scan daily account limit, validates image type and size, and calls the AI provider with a server-side key. On iOS, enable the HealthKit capability in the signing profile. On Android, install Health Connect and review the privacy policy before requesting permissions.

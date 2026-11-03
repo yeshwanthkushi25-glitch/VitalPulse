@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Vitalpulse App</string>
+	<string>VitalPulse</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>VitalPulse reads steps, heart rate, and sleep only after you grant permission, so you can sync your daily wellness summary.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>VitalPulse uses the camera only when you choose to take a meal photo for a nutrition estimate.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>VitalPulse accesses a photo you choose to create a nutrition estimate.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
