@@ -2,6 +2,8 @@
 
 VitalPulse is a Flutter application for nutrition and daily wellness tracking, backed by Supabase Auth and a row-level-secured Postgres database. The earlier browser prototypes are preserved separately in `demos/`.
 
+**The HTML demos are local-only prototypes.** Their sample accounts and browser storage are not secure authentication or server-side storage. The demo pages remove previously entered Supabase key fields and scrub saved key values from their local storage. Use the Flutter app for real accounts and data.
+
 ## Project layout
 
 - `vitalpulse_app/` — Flutter app for Android, iOS, web, and Windows.
