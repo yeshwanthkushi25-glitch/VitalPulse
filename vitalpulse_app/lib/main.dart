@@ -327,6 +327,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool loading = true, scanning = false, syncingHealth = false;
   String? message;
   String get date => DateTime.now().toIso8601String().substring(0, 10);
+  bool get healthSyncSupported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
   int get totalCalories =>
       meals.fold(0, (v, m) => v + ((m['calories_kcal'] as num?)?.round() ?? 0));
   double get totalProtein =>
@@ -980,9 +984,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   );
 
   Future<void> syncDeviceHealth() async {
-    if (kIsWeb ||
-        !(defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (!healthSyncSupported) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -1612,19 +1614,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         style: TextStyle(fontWeight: FontWeight.w800),
       ),
       actions: [
-        IconButton(
-          tooltip: syncingHealth
-              ? 'Syncing device health…'
-              : 'Sync Apple Health / Health Connect',
-          onPressed: syncingHealth ? null : syncDeviceHealth,
-          icon: syncingHealth
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.watch_outlined),
-        ),
+        if (healthSyncSupported)
+          IconButton(
+            tooltip: syncingHealth
+                ? 'Syncing device health…'
+                : 'Sync Apple Health / Health Connect',
+            onPressed: syncingHealth ? null : syncDeviceHealth,
+            icon: syncingHealth
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.watch_outlined),
+          ),
         IconButton(
           tooltip: scanning ? 'Analyzing meal photo…' : 'Scan meal photo',
           onPressed: scanning ? null : scanMealPhoto,
@@ -1801,19 +1804,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : 'Unavailable on this device',
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Read device health data',
-                          onPressed: syncingHealth ? null : syncDeviceHealth,
-                          icon: syncingHealth
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.sync),
-                        ),
+                        if (healthSyncSupported)
+                          IconButton(
+                            tooltip: 'Read device health data',
+                            onPressed: syncingHealth ? null : syncDeviceHealth,
+                            icon: syncingHealth
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.sync),
+                          ),
                       ],
                     ),
                   ),

@@ -1,6 +1,6 @@
 # VitalPulse Project Progress and Handoff
 
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 This document is a working handoff for the next AI or developer. Continue the current task from this state; do not restart the project or replace user work without checking it first.
 
@@ -79,6 +79,15 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - Root `README.md`, `vitalpulse_app/README.md`, and `supabase/README.md` were updated to describe the shared Flutter app, features, Supabase secrets, and deployment.
 - This file, `progress.md`, is a handoff document and should be included in the eventual GitHub commit.
 
+### Latest continuation (2026-11-04)
+
+- Updated `vitalpulse_app/lib/main.dart` so Apple Health / Health Connect controls are rendered only on supported Android and iOS devices. Web and desktop now show the platform status without presenting a clickable sync control that cannot work there.
+- Ran `dart format lib/main.dart`; the file was already formatted.
+- Ran `flutter analyze --no-pub`; it completed with **No issues found**.
+- Ran `MSYS_NO_PATHCONV=1 flutter build web --release --base-href /VitalPulse/`; it completed successfully and produced `build/web/index.html` and `build/web/main.dart.js`. Git Bash path conversion caused the first Windows invocation to reject the base href before compilation; the corrected invocation succeeded.
+- Ran `git diff --check`; it passed. The local `.vscode/settings.json` remains untracked and is excluded from the commit.
+- The pending code and progress updates still need to be committed and pushed to `origin main`, followed by GitHub Actions and Pages verification.
+
 ## Verification so far
 
 - `flutter analyze --no-pub` completed successfully with **No issues found** after the latest Flutter UI edits.
@@ -90,18 +99,14 @@ The user wants the different VitalPulse websites and apps to have the same featu
 
 ## Immediate remaining work
 
-1. Inspect `vitalpulse_app/lib/main.dart` after the latest edits; remove any misleading fake controls and preserve actual platform-specific behavior.
-2. Run `dart format lib/main.dart` and `flutter analyze --no-pub` from `vitalpulse_app/`.
-3. Build the web app with `flutter build web --release --base-href /VitalPulse/`. The previous build command may still have returned through a long-running tool cell; if so, poll it before starting another build. Confirm the generated `index.html` and `main.dart.js` exist.
-4. Check `git diff --check` and review the intended diff. Search for provider key values or service-role credentials without printing any matches. Never stage `.vscode/settings.json`, `.env.local`, or generated build directories.
-5. Stage the intended code, migration, docs, workflow, and this `progress.md`; commit and push to `origin main` as the user has requested.
-6. Watch the GitHub Actions run. Fix build/deployment failures. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
+1. Stage the intended code and this `progress.md`; commit and push to `origin main` as the user has requested. Never stage `.vscode/settings.json`, `.env.local`, or generated build directories.
+2. Watch the GitHub Actions run. Fix build/deployment failures. Confirm the Pages URL returns the Flutter app, then confirm each of these compatibility URLs loads the same app:
    - `/VitalPulse/demos/food-drink-scanner/`
    - `/VitalPulse/demos/personalized-diet/`
    - `/VitalPulse/demos/supabase-dashboard/`
    - the three original `vitalpulse_ai_*.html` filenames at the site root.
-7. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
-8. Report the GitHub repository and live Pages URL. State clearly whether the Android preview artifact succeeded. Mention the one Free-plan Supabase password-protection warning.
+3. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
+4. Report the GitHub repository and live Pages URL. State clearly whether the Android preview artifact succeeded. Mention the one Free-plan Supabase password-protection warning.
 
 ## Safety reminders
 
