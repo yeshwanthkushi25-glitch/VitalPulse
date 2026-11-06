@@ -9,6 +9,7 @@ The original HTML prototypes are retained in `demos/` for project history. The p
 - `vitalpulse_app/` — Flutter app for Android, iOS, web, and Windows.
 - `supabase/` — backend configuration and database migrations.
 - `supabase/functions/analyze-food/` — authenticated, rate-limited AI meal scanner. Provider secrets are stored server-side.
+- `powerbi/` — Power BI Desktop project (`.pbip`) for nutrition, calorie trends, and wellness reporting with synthetic demo data.
 - `demos/` — three original HTML prototypes, retained as source history; deployed addresses route to the shared Flutter app.
 - `docs/screenshots/` — screenshots of the app and demos.
 - `docs/privacy-policy.md` — starter privacy policy for review before release.

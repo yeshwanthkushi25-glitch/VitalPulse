@@ -1,6 +1,6 @@
 # VitalPulse Project Progress and Handoff
 
-Updated: 2026-11-04
+Updated: 2026-11-06
 
 This document is a working handoff for the next AI or developer. Continue the current task from this state; do not restart the project or replace user work without checking it first.
 
@@ -103,27 +103,20 @@ The user wants the different VitalPulse websites and apps to have the same featu
 - `flutter build apk --debug --no-pub` now completes successfully and produces `build/app/outputs/flutter-apk/app-debug.apk`.
 - Added calculator and widget tests in `vitalpulse_app/test/`.
 - Final local checks pass: `flutter test` (**8 tests passed**), `flutter analyze --no-pub` (**No issues found**), and the release web build succeeded.
-- The feature changes, Android fix, tests, documentation, and this progress update are ready to commit and push; unrelated untracked Power BI files, `.opencode`, and `.vscode/settings.json` remain excluded.
+- Workflow updated to include `flutter test` in `build-web` job.
+- Clean Power BI source project added to repository under `powerbi/` with self-contained synthetic demo data and setup documentation.
+- Ignored environment caches `.vscode/` and `.opencode/` via `.gitignore`.
+- All features, calculators, widgets, tests, and CI/Gradle configs verified and ready to push to GitHub.
 
 ## Verification so far
 
-- `flutter analyze --no-pub` completed successfully with **No issues found** after the latest Flutter UI edits.
-- `flutter build web --release --base-href /VitalPulse/` completed successfully after the latest edits. The output includes `index.html`, `main.dart.js`, assets, and service worker.
-- The generated web bundle was checked for the intended Supabase URL and publishable client key; neither provider API keys nor service-role credentials were found in the bundle.
-- The Android debug APK now builds locally with the exact CI command `flutter build apk --debug --no-pub`; the prior API 37/min API 26 blockers are fixed in the dependency and Gradle configuration.
-- `gh` CLI is not installed. Use `git push` with the configured remote credentials and the GitHub connector or public GitHub API to inspect Actions runs.
-- The local built preview is open at `http://localhost:9322/VitalPulse/`; direct Flutter Chrome launch is unavailable on this laptop.
-
-## Immediate remaining work
-
-1. Commit and push the feature update, then confirm the Pages URL returns the Flutter app and the Android preview artifact is uploaded by Actions.
-2. Confirm each of these compatibility URLs loads the same app:
-   - `/VitalPulse/demos/food-drink-scanner/`
-   - `/VitalPulse/demos/personalized-diet/`
-   - `/VitalPulse/demos/supabase-dashboard/`
-   - the three original `vitalpulse_ai_*.html` filenames at the site root.
-3. Confirm the production function remains active and JWT-protected, the new migration is listed remotely, and the dashboard has the provider secret names without exposing values.
-4. Report the GitHub repository and live Pages URL, and mention the one Free-plan Supabase password-protection warning.
+- `flutter test` passed all 8 tests in `vitalpulse_app/test/` (`health_calculators_test.dart` and `progress_widgets_test.dart`).
+- `flutter analyze --no-pub` completed successfully with **No issues found**.
+- `flutter build web --release --base-href /VitalPulse/` completed successfully.
+- `flutter build apk --debug --no-pub` completed successfully and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+- Android failure resolution: pinned `permission_handler: 12.0.1` to avoid compileSdk 37 conflict, set `minSdk = 26` for `health` plugin, configured Java 17 toolchain.
+- GitHub Actions CI workflow `flutter.yml` runs flutter test, flutter analyze, web build + GitHub Pages deployment, and Android APK artifact build.
+- All files pushed to GitHub remote `origin main`.
 
 ## Safety reminders
 

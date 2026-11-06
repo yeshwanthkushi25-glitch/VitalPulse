@@ -1,0 +1,73 @@
+{
+  "config": "{\"version\":\"5.70\",\"themeCollection\":{\"baseTheme\":{\"name\":\"CY26SU02\",\"version\":{\"visual\":\"2.6.0\",\"report\":\"3.1.0\",\"page\":\"2.3.0\"},\"type\":2}},\"activeSectionIndex\":0,\"defaultDrillFilterOtherVisuals\":true,\"settings\":{\"useNewFilterPaneExperience\":true,\"allowChangeFilterTypes\":true,\"useStylableVisualContainerHeader\":true}}",
+  "layoutOptimization": 0,
+  "sections": [
+    {
+      "name": "ReportSectionVitalPulse",
+      "displayName": "VitalPulse Overview",
+      "displayOption": 1,
+      "width": 1280,
+      "height": 720,
+      "ordinal": 0,
+      "config": "{\"name\":\"ReportSectionVitalPulse\"}",
+      "filters": "[]",
+      "visualContainers": [
+        {
+          "x": 24,
+          "y": 24,
+          "z": 0,
+          "width": 280,
+          "height": 120,
+          "config": "{\"name\":\"vitalpulse_total_calories\",\"layouts\":[{\"id\":0,\"position\":{\"x\":24,\"y\":24,\"z\":0,\"width\":280,\"height\":120}}],\"singleVisual\":{\"visualType\":\"cardVisual\",\"projections\":{\"Data\":[{\"queryRef\":\"Nutrition Logs.Total Calories\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"n\",\"Entity\":\"Nutrition Logs\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"n\"}},\"Property\":\"Total Calories\"},\"Name\":\"Nutrition Logs.Total Calories\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        },
+        {
+          "x": 320,
+          "y": 24,
+          "z": 1,
+          "width": 280,
+          "height": 120,
+          "config": "{\"name\":\"vitalpulse_nutrition_entries\",\"layouts\":[{\"id\":0,\"position\":{\"x\":320,\"y\":24,\"z\":1,\"width\":280,\"height\":120}}],\"singleVisual\":{\"visualType\":\"cardVisual\",\"projections\":{\"Data\":[{\"queryRef\":\"Nutrition Logs.Nutrition Entries\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"n\",\"Entity\":\"Nutrition Logs\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"n\"}},\"Property\":\"Nutrition Entries\"},\"Name\":\"Nutrition Logs.Nutrition Entries\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        },
+        {
+          "x": 616,
+          "y": 24,
+          "z": 2,
+          "width": 280,
+          "height": 120,
+          "config": "{\"name\":\"vitalpulse_average_steps\",\"layouts\":[{\"id\":0,\"position\":{\"x\":616,\"y\":24,\"z\":2,\"width\":280,\"height\":120}}],\"singleVisual\":{\"visualType\":\"cardVisual\",\"projections\":{\"Data\":[{\"queryRef\":\"Daily Health Logs.Average Steps\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"h\",\"Entity\":\"Daily Health Logs\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"h\"}},\"Property\":\"Average Steps\"},\"Name\":\"Daily Health Logs.Average Steps\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        },
+        {
+          "x": 912,
+          "y": 24,
+          "z": 3,
+          "width": 280,
+          "height": 120,
+          "config": "{\"name\":\"vitalpulse_average_sleep\",\"layouts\":[{\"id\":0,\"position\":{\"x\":912,\"y\":24,\"z\":3,\"width\":280,\"height\":120}}],\"singleVisual\":{\"visualType\":\"cardVisual\",\"projections\":{\"Data\":[{\"queryRef\":\"Daily Health Logs.Average Sleep\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"h\",\"Entity\":\"Daily Health Logs\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"h\"}},\"Property\":\"Average Sleep\"},\"Name\":\"Daily Health Logs.Average Sleep\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        },
+        {
+          "x": 24,
+          "y": 168,
+          "z": 4,
+          "width": 570,
+          "height": 480,
+          "config": "{\"name\":\"vitalpulse_calories_by_entry\",\"layouts\":[{\"id\":0,\"position\":{\"x\":24,\"y\":168,\"z\":4,\"width\":570,\"height\":480}}],\"singleVisual\":{\"visualType\":\"clusteredColumnChart\",\"projections\":{\"Category\":[{\"queryRef\":\"Nutrition Logs.title\",\"active\":true}],\"Y\":[{\"queryRef\":\"Sum(Nutrition Logs.calories_kcal)\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"n\",\"Entity\":\"Nutrition Logs\",\"Type\":0}],\"Select\":[{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"n\"}},\"Property\":\"title\"},\"Name\":\"Nutrition Logs.title\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"n\"}},\"Property\":\"calories_kcal\"}},\"Function\":0},\"Name\":\"Sum(Nutrition Logs.calories_kcal)\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        },
+        {
+          "x": 616,
+          "y": 168,
+          "z": 5,
+          "width": 576,
+          "height": 480,
+          "config": "{\"name\":\"vitalpulse_health_trends\",\"layouts\":[{\"id\":0,\"position\":{\"x\":616,\"y\":168,\"z\":5,\"width\":576,\"height\":480}}],\"singleVisual\":{\"visualType\":\"lineChart\",\"projections\":{\"Category\":[{\"queryRef\":\"Daily Health Logs.log_date\",\"active\":true}],\"Y\":[{\"queryRef\":\"Sum(Daily Health Logs.steps)\",\"active\":true},{\"queryRef\":\"Average(Daily Health Logs.sleep_hours)\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"h\",\"Entity\":\"Daily Health Logs\",\"Type\":0}],\"Select\":[{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"h\"}},\"Property\":\"log_date\"},\"Name\":\"Daily Health Logs.log_date\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"h\"}},\"Property\":\"steps\"}},\"Function\":0},\"Name\":\"Sum(Daily Health Logs.steps)\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"h\"}},\"Property\":\"sleep_hours\"}},\"Function\":1},\"Name\":\"Average(Daily Health Logs.sleep_hours)\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]"
+        }
+      ]
+    }
+  ],
+  "resourcePackages": []
+}

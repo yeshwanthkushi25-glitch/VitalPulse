@@ -14,3 +14,6 @@ coverage/
 *.log
 flutter_*.png
 captures/
+.vscode/
+.opencode/
+*.zip

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "VitalPulse Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "1a0d3d6b-89d7-4ad9-92e7-f1e5bc3f6ad0"
+  }
+}
